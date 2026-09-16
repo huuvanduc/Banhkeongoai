@@ -8,7 +8,7 @@ Added Mivolis Calcium + D3 (300 tablets, VND 250,000, expiry 02/2029), Doppelher
 
 ## Try it
 
-Browse categories or search by product/brand, open product details, add items to the cart, adjust quantities, and complete a demo order using fictitious delivery information. Select either QR or card to preview the intended flow. The **Đăng nhập** button supports a customer account or a separate owner account. On the first device, the **Chủ cửa hàng** tab creates the local administrator; later visits on that browser use the same tab to sign in. The footer's **Quản lý thử nghiệm** requires that local administrator and opens tools for adding products, editing full product details, changing price/stock, and reviewing demo orders.
+Browse categories or search by product/brand, open product details, add items to the cart, adjust quantities, and complete a demo order using fictitious delivery information. Select either QR or card to preview the intended flow. The **Đăng nhập** button supports a customer account or a separate owner account. On the first device, the **Chủ cửa hàng** tab creates the local administrator; later visits on that browser use the same tab to sign in. The footer's **Quản lý thử nghiệm** requires that local administrator and opens tools for adding products, editing full product details, changing price/stock, hiding or restoring listings, deleting products, and reviewing demo orders.
 
 ## How it works
 
@@ -26,7 +26,7 @@ In repository **Settings → Pages**, select **Deploy from a branch**, then choo
 
 ## State and payments
 
-Demo orders still exist only in the current page's memory and reset on refresh. Customer and administrator accounts, plus product edits, use this browser's local storage so they survive refreshes only on the same browser/device. Passwords are transformed with PBKDF2 before local storage, but all browser-side code and data remain under the visitor's control. This is an interface and learning prototype—not secure authentication or authorization—and must not be used with real customer data or real passwords.
+Demo orders still exist only in the current page's memory and reset on refresh. Customer and administrator accounts, product edits, hidden listings, and deletions use this browser's local storage so they survive refreshes only on the same browser/device. Hiding a product removes it from the storefront and cart but keeps it in management. Deletion asks for confirmation and is blocked while the product belongs to a non-cancelled demo order. Passwords are transformed with PBKDF2 before local storage, but all browser-side code and data remain under the visitor's control. This is an interface and learning prototype—not secure authentication or authorization—and must not be used with real customer data or real passwords.
 
 Customer details are not sent to a backend. No payment QR is generated, card number is collected, email is sent, or delivery is booked. The illustrative delivery charge is VND 30,000 and is not a carrier quote. Product image editing accepts an existing `/assets/...` path or an HTTPS image URL; it does not upload image files.
 
