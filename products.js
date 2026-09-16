@@ -10,7 +10,7 @@ const PRODUCTS = [
     "sellerProvided": true,
     "expiry": "02/2029",
     "description": "Viên uống Calcium + D3. Giá bán lẻ 250.000 ₫/lọ 300 viên. Hạn sử dụng theo thông tin cửa hàng: 02/2029. Ảnh chỉ mang tính tham khảo; ngày in trên ảnh không đại diện cho lô hàng hiện tại.",
-    "image": "/assets/mivolis-calcium-d3.png"
+    "image": "./assets/mivolis-calcium-d3.png"
   },
   {
     "id": "doppelherz-magnesium-calcium-d3",
@@ -23,7 +23,7 @@ const PRODUCTS = [
     "sellerProvided": true,
     "expiry": "01/2028",
     "description": "Viên uống Magnesium + Calcium + D3. Giá bán lẻ 185.000 ₫/hộp 40 viên. Hạn sử dụng theo thông tin cửa hàng: 01/2028. Ảnh chỉ mang tính tham khảo.",
-    "image": "/assets/doppelherz-magnesium-calcium-d3.png"
+    "image": "./assets/doppelherz-magnesium-calcium-d3.png"
   },
   {
     "id": "doppelherz-magnesium-400",
@@ -35,7 +35,7 @@ const PRODUCTS = [
     "stock": 10,
     "sellerProvided": true,
     "description": "Viên uống Magnesium 400. Giá bán lẻ 160.000 ₫/hộp 30 viên. Thành phần cụ thể và hạn sử dụng sẽ được cập nhật theo lô hàng thực tế. Ảnh chỉ mang tính tham khảo.",
-    "image": "/assets/doppelherz-magnesium-400.png"
+    "image": "./assets/doppelherz-magnesium-400.png"
   },
   {
     "id": "haribo",
@@ -46,7 +46,7 @@ const PRODUCTS = [
     "price": 45000,
     "stock": 20,
     "description": "Kẹo dẻo hình gấu. Sản phẩm được chọn để minh họa danh mục bánh kẹo.",
-    "image": "/assets/haribo.webp"
+    "image": "./assets/haribo.webp"
   },
   {
     "id": "ritter-sport",
@@ -57,7 +57,7 @@ const PRODUCTS = [
     "price": 65000,
     "stock": 15,
     "description": "Thanh chocolate sữa Alpine Milk. Thông tin mẫu phục vụ trải nghiệm mua sắm.",
-    "image": "/assets/ritter-sport.webp"
+    "image": "./assets/ritter-sport.webp"
   },
   {
     "id": "lotus",
@@ -68,7 +68,7 @@ const PRODUCTS = [
     "price": 79000,
     "stock": 18,
     "description": "Bánh quy Biscoff vị caramel. Giá và tồn kho là dữ liệu minh họa.",
-    "image": "/assets/lotus.webp"
+    "image": "./assets/lotus.webp"
   },
   {
     "id": "lindt",
@@ -79,7 +79,7 @@ const PRODUCTS = [
     "price": 189000,
     "stock": 12,
     "description": "Hộp chocolate Lindor sữa. Sản phẩm mẫu để trải nghiệm chọn và đặt hàng.",
-    "image": "/assets/lindt.webp"
+    "image": "./assets/lindt.webp"
   },
   {
     "id": "custas",
@@ -90,7 +90,7 @@ const PRODUCTS = [
     "price": 42000,
     "stock": 16,
     "description": "Bánh bông lan nhân kem sữa. Bao bì mẫu; xuất xứ nhập khẩu phải được xác nhận theo lô thực tế.",
-    "image": "/assets/custas.webp"
+    "image": "./assets/custas.webp"
   },
   {
     "id": "hello-panda",
@@ -101,7 +101,7 @@ const PRODUCTS = [
     "price": 35000,
     "stock": 25,
     "description": "Bánh quy nhân chocolate Hello Panda. Sản phẩm minh họa cho danh mục bánh.",
-    "image": "/assets/hello-panda.webp"
+    "image": "./assets/hello-panda.webp"
   },
   {
     "id": "hada-labo",
@@ -112,7 +112,7 @@ const PRODUCTS = [
     "price": 225000,
     "stock": 10,
     "description": "Lotion Gokujyun. Phiên bản, thành phần và hướng dẫn dùng cần đối chiếu nhãn hàng thực tế.",
-    "image": "/assets/hada-labo.webp"
+    "image": "./assets/hada-labo.webp"
   },
   {
     "id": "bioderma",
@@ -123,7 +123,7 @@ const PRODUCTS = [
     "price": 269000,
     "stock": 8,
     "description": "Nước tẩy trang Sensibio H2O. Thông tin lô và nhãn sản phẩm sẽ được bổ sung trước khi mở bán.",
-    "image": "/assets/bioderma.webp"
+    "image": "./assets/bioderma.webp"
   },
   {
     "id": "blackmores",
@@ -134,7 +134,7 @@ const PRODUCTS = [
     "price": 485000,
     "stock": 7,
     "description": "Sản phẩm bổ sung Bio C 1000. Đây là mục hàng mẫu, không phải hướng dẫn sử dụng hoặc khuyến nghị sức khỏe.",
-    "image": "/assets/blackmores.webp"
+    "image": "./assets/blackmores.webp"
   },
   {
     "id": "dhc",
@@ -145,6 +145,6 @@ const PRODUCTS = [
     "price": 135000,
     "stock": 15,
     "description": "Sản phẩm bổ sung Vitamin C. Thành phần, đối tượng và hướng dẫn dùng sẽ theo nhãn lô hàng thực tế.",
-    "image": "/assets/dhc.webp"
+    "image": "./assets/dhc.webp"
   }
 ];
