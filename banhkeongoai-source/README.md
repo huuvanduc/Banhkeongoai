@@ -1,6 +1,6 @@
 # banhkeongoai — initial storefront
 
-A Vietnamese-language, mobile-responsive demonstration with 13 products: three seller-provided supplement listings and the original ten sample products. Prices use VND. This is an initial interactive prototype, not a production commerce backend.
+A Vietnamese-language, mobile-responsive demonstration with 13 products: three seller-provided supplement listings and the original ten sample products. Prices use VND. The prototype now includes customer registration/login, separate first-time administrator setup/login, and a product editor. This is still not a production commerce backend.
 
 ## Seller catalog update
 
@@ -8,21 +8,23 @@ Added Mivolis Calcium + D3 (300 tablets, VND 250,000, expiry 02/2029), Doppelher
 
 ## Try it
 
-Browse categories or search by product/brand, open product details, add items to the cart, adjust quantities, and complete a demo order using fictitious delivery information. Select either QR or card to preview the intended flow. The footer's **Quản lý thử nghiệm** opens an explicitly labeled simulation for changing prices/stock and reviewing demo orders and fulfillment states.
+Browse categories or search by product/brand, open product details, add items to the cart, adjust quantities, and complete a demo order using fictitious delivery information. Select either QR or card to preview the intended flow. The **Đăng nhập** button supports a customer account or a separate owner account. On the first device, the **Chủ cửa hàng** tab creates the local administrator; later visits on that browser use the same tab to sign in. The footer's **Quản lý thử nghiệm** requires that local administrator and opens tools for adding products, editing full product details, changing price/stock, and reviewing demo orders.
 
 ## How it works
 
 - `dist/index.html`: page structure, catalog, accessible native dialog windows, and checkout fields.
 - `dist/style.css`: brand colors, typography, grids, mobile layout, and interaction states.
 - `dist/products.js`: ten sample records; replace with the real catalog before launch.
-- `dist/app.js`: catalog filters, sorting, cart calculations, validation, demo orders, and management controls.
+- `dist/app.js`: catalog filters, sorting, cart calculations, validation, local account prototype, demo orders, and management controls.
 - `dist/assets/`: optimized product reference images. Original sources are recorded in `ASSET_SOURCES.json`; permission to reuse commercially has not been verified. Replace with shop/supplier-authorized photos before public launch.
 
 The project deliberately uses plain HTML, CSS, and JavaScript for an approachable first version. There are no external runtime dependencies or installation requirements. Serve `dist` as the web root for local development; opening index.html directly as a file will not resolve root-relative assets.
 
 ## State and payments
 
-All order and management state exists only in the current page's memory. Refreshing resets it. Customer details are not sent to a backend. No payment QR is generated, card number is collected, email is sent, or delivery is booked. The illustrative delivery charge is VND 30,000 and is not a carrier quote. Management is not authenticated and must not be used for real customer data.
+Demo orders still exist only in the current page's memory and reset on refresh. Customer and administrator accounts, plus product edits, use this browser's local storage so they survive refreshes only on the same browser/device. Passwords are transformed with PBKDF2 before local storage, but all browser-side code and data remain under the visitor's control. This is an interface and learning prototype—not secure authentication or authorization—and must not be used with real customer data or real passwords.
+
+Customer details are not sent to a backend. No payment QR is generated, card number is collected, email is sent, or delivery is booked. The illustrative delivery charge is VND 30,000 and is not a carrier quote. Product image editing accepts an existing `/assets/...` path or an HTTPS image URL; it does not upload image files.
 
 Sample inventory decreases after a demo order; cancelling an order restores its stock. Restoring a cancelled order checks availability first. Quantities cannot exceed sample stock. Editing inventory reconciles quantities already in the cart.
 
@@ -30,7 +32,7 @@ Sample inventory decreases after a demo order; cancelling an order restores its 
 
 1. Supply the actual ten products: authorized photos, price, variant/pack size, stock, weight, origin, ingredients/allergens where relevant, storage and label information, expiry/batch details. Verify the source country from the actual item, not brand nationality.
 2. Choose production hosting and a domain. The private review Site is separate from a public customer launch.
-3. Add a persistent backend/database and authenticated, authorized management. Calculate prices, shipping, stock, and order totals on the server. Reserve stock atomically and synchronize the Facebook selling workflow.
+3. Replace the local account/catalog prototype with a persistent backend/database and server-side authentication and role authorization. Prevent public self-registration from creating administrators. Calculate prices, shipping, stock, and order totals on the server. Reserve stock atomically and synchronize the Facebook selling workflow.
 4. Connect a merchant-approved QR/card provider via hosted payment pages. Keep credentials server-side, verify signed provider callbacks, handle duplicate notifications idempotently, and reconcile payment/stock states. Do not mark an order paid based only on browser navigation.
 5. Specify the local carrier, pickup address, coverage, weights, shipping rates, fulfillment process and tracking integration.
 6. Add actual contact/Facebook details and store-approved delivery, returns and privacy information; complete applicable business/product requirements before accepting orders.
