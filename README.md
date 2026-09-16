@@ -12,13 +12,17 @@ Browse categories or search by product/brand, open product details, add items to
 
 ## How it works
 
-- `dist/index.html`: page structure, catalog, accessible native dialog windows, and checkout fields.
-- `dist/style.css`: brand colors, typography, grids, mobile layout, and interaction states.
-- `dist/products.js`: ten sample records; replace with the real catalog before launch.
-- `dist/app.js`: catalog filters, sorting, cart calculations, validation, demo orders, and management controls.
-- `dist/assets/`: optimized product reference images. Original sources are recorded in `ASSET_SOURCES.json`; permission to reuse commercially has not been verified. Replace with shop/supplier-authorized photos before public launch.
+- `index.html`: page structure, catalog, accessible native dialog windows, and checkout fields.
+- `style.css`: brand colors, typography, grids, mobile layout, and interaction states.
+- `products.js`: ten sample records; replace with the real catalog before launch.
+- `app.js`: catalog filters, sorting, cart calculations, validation, demo orders, and management controls.
+- `assets/`: optimized product reference images. Original sources are recorded in `ASSET_SOURCES.json`; permission to reuse commercially has not been verified. Replace with shop/supplier-authorized photos before public launch.
 
-The project deliberately uses plain HTML, CSS, and JavaScript for an approachable first version. There are no external runtime dependencies or installation requirements. Serve `dist` as the web root for local development; opening index.html directly as a file will not resolve root-relative assets.
+The project deliberately uses plain HTML, CSS, and JavaScript for an approachable first version. There are no external runtime dependencies or installation requirements. The deployable storefront lives at the repository root so GitHub Pages can publish from `main` and `/(root)`. Asset paths are relative, so the project also works under the `/Banhkeongoai/` project-site path. For local development, serve the repository root with a small HTTP server.
+
+## GitHub Pages deployment
+
+In repository **Settings → Pages**, select **Deploy from a branch**, then choose `main` and `/(root)`. Changes become public only after a pull request is merged into `main` and the Pages deployment completes.
 
 ## State and payments
 
