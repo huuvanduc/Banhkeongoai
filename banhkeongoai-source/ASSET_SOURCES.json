@@ -1,0 +1,90 @@
+[
+  {
+    "name": "haribo",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/haribo.jpg",
+    "image_url": "https://livraricampina.ro/cdn/shop/products/1e5dde0e076dce2a535c47d37c18_2048x.jpg?v=1652790216",
+    "source_url": "https://livraricampina.ro/products/39623",
+    "bytes": 432738,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "ritter-sport",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/ritter-sport.jpg",
+    "image_url": "https://discountstore.pk/cdn/shop/files/71osGtF37cL.jpg?v=1762410837",
+    "source_url": "https://discountstore.pk/products/ritter-sport-alpine-milk-chocolate-bar-100g",
+    "bytes": 188496,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "lindt",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/lindt.jpg",
+    "image_url": "https://www.sharjahcoop.ae/medias/7610400020206-1200Wx1200H-001.jpg?context=bWFzdGVyfHNjc3wxMzcyMjV8aW1hZ2UvanBlZ3xhRFEyTDJnNVlTODVNVEE1TVRrek5UZzROelkyTHpjMk1UQTBNREF3TWpBeU1EWmZNVEl3TUZkNE1USXdNRWhmTURBeExtcHdad3wwMmFjMTUyNjM2MTlmM2UyOWFkNGE2NDE2MWRhYmU5MjgwM2Y4YzdlZWRjNjdjMzE1OWNiMzNkYzg1YzY5MTcx",
+    "source_url": "https://www.sharjahcoop.ae/en/lindt-lindor-milk-chocolate-200-g/p/7610400020206",
+    "bytes": 137225,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "lotus",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/lotus.jpg",
+    "image_url": "https://i0.wp.com/alghandourmarket.ma/wp-content/uploads/2025/02/1000706772.jpg?fit=800%2C800&ssl=1",
+    "source_url": "https://alghandourmarket.ma/product/lotus-biscoff-250g/",
+    "bytes": 37437,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "custas",
+    "product": "Orion Custas milk cream sponge cakes",
+    "pack": "6 cakes / 138g",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/custas.jpg",
+    "image_url": "https://product.hstatic.net/1000288770/product/b_nh_b_ng_lan_custas_orion_nh_n_kem_s_a_6_c_i_h_p_138g_1_master.jpg",
+    "source_url": "https://www.webtaphoa.vn/products/banh-bong-lan-custas-orion-nhan-kem-sua-6-cai-hop-138g",
+    "reuse": "No reuse license verified; private demo reference asset only"
+  },
+  {
+    "name": "hello-panda",
+    "image_url": "https://merkadoph.se/cdn/shop/files/hello-panda-chocolate-1.jpg?v=1750548860",
+    "source_url": "https://merkadoph.se/products/meiji-hello-panda-biscuits-with-chocolate-flavor-filling-50g",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/hello-panda.jpg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "hada-labo",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/hada-labo.jpg",
+    "image_url": "https://m.media-amazon.com/images/I/31WPfUEWK7L._SL500_.jpg",
+    "source_url": "https://circleofintrapreneurs.com/hada-labo-gokujyun-hydrating-lotion/",
+    "bytes": 13215,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "bioderma",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/bioderma.jpg",
+    "image_url": "https://i5.walmartimages.com/asr/752c0c96-3089-498f-b416-3691d8d72cd8.78da2e7bf020188f11d1b0db8dc2786d.jpeg",
+    "source_url": "https://www.walmart.com/ip/5038289097",
+    "bytes": 52492,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "blackmores",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/blackmores.webp",
+    "image_url": "https://images.contentstack.io/v3/assets/blt948bd74310fc0ad0/blt865ab5be5b619131/68bfbb208ad3e2f238ef122f/9300807325698-1.webp",
+    "source_url": "https://www.blackmores.com.au/products/bio-c-1000",
+    "bytes": 299754,
+    "type": "image/webp",
+    "reuse": "No reuse license verified; demo reference asset only"
+  },
+  {
+    "name": "dhc",
+    "path": "/workspace/scratch/9932fd659a7e/product-assets/dhc.jpg",
+    "image_url": "https://shop.r10s.jp/daikisone/cabinet/f/dhc4133_001.jpg",
+    "source_url": "https://item.rakuten.co.jp/daikisone/dhc4133/",
+    "bytes": 136862,
+    "type": "image/jpeg",
+    "reuse": "No reuse license verified; demo reference asset only"
+  }
+]
