@@ -5,3 +5,4 @@
 @media(max-width:800px){.account-toggle{margin-left:auto}.cart-toggle{margin-left:0}.admin-toolbar{align-items:flex-start;flex-direction:column}.admin-product-row{grid-template-columns:40px 1fr 85px 65px;gap:8px}.admin-product-row .admin-actions{grid-column:2/-1}}
 @media(max-width:540px){.account-icon{width:32px;height:32px}.auth-tabs{overflow-x:auto}.auth-tabs button{white-space:nowrap;flex:none;padding-inline:10px}.admin-actions{align-items:flex-start;flex-direction:column}.editor-modal .form-row{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+.info-preline{white-space:pre-line}
