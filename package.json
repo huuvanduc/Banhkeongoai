@@ -1,0 +1,28 @@
+{
+  "name": "banhkeongoai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-gated Vietnamese ecommerce storefront",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch server/index.js",
+    "start": "node server/index.js",
+    "db:migrate": "node server/scripts/migrate.js",
+    "admin:create": "node server/scripts/create-admin.js",
+    "test": "node --test",
+    "check": "node --check server/index.js && node --check app.js && node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3",
+    "zod": "^4.1.8"
+  }
+}
