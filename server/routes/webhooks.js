@@ -4,6 +4,8 @@ import { withTransaction } from "../db.js";
 import { config } from "../config.js";
 import { asyncRoute, HttpError } from "../lib/http.js";
 import { verifyWebhookSignature } from "../services/integrations.js";
+import { releaseOrderInventory } from "../services/order-lifecycle.js";
+import { queueEmail } from "../services/email.js";
 
 const router = Router();
 const eventSchema = z.object({
@@ -70,11 +72,44 @@ router.post(
           "payment_mismatch",
           "Không thể đối chiếu thanh toán với đơn hàng.",
         );
-      if (event.type === "payment.paid" && order.payment_status === "pending") {
-        await client.query(
-          "UPDATE orders SET payment_status='paid',status='paid',updated_at=now() WHERE id=$1",
-          [order.id],
-        );
+      if (
+        event.type === "payment.paid" &&
+        !["paid", "refunded"].includes(order.payment_status)
+      ) {
+        if (["cancelled", "payment_failed"].includes(order.status)) {
+          await client.query(
+            "UPDATE orders SET payment_status='paid',requires_review=true,version=version+1,updated_at=now() WHERE id=$1",
+            [order.id],
+          );
+          await client.query(
+            "INSERT INTO audit_logs (action,entity_type,entity_id,metadata) VALUES ('payment.late','order',$1,$2)",
+            [
+              order.id,
+              {
+                paymentReference: event.paymentReference,
+                providerEventId: event.id,
+              },
+            ],
+          );
+        } else {
+          await client.query(
+            "UPDATE orders SET payment_status='paid',status='paid',version=version+1,updated_at=now() WHERE id=$1",
+            [order.id],
+          );
+          if (order.customer_email) {
+            await queueEmail(client, {
+              recipient: order.customer_email,
+              template: "order_status",
+              payload: {
+                name: order.customer_name,
+                orderNumber: order.order_number,
+                status: "paid",
+                trackingNumber: null,
+              },
+              dedupeKey: `order_paid:${order.id}`,
+            });
+          }
+        }
       } else if (
         ["payment.failed", "payment.cancelled"].includes(event.type) &&
         order.payment_status === "pending"
@@ -84,29 +119,16 @@ router.post(
         const nextStatus =
           event.type === "payment.failed" ? "payment_failed" : "cancelled";
         await client.query(
-          "UPDATE orders SET payment_status=$1,status=$2,updated_at=now() WHERE id=$3",
+          "UPDATE orders SET payment_status=$1,status=$2,version=version+1,updated_at=now() WHERE id=$3",
           [nextPayment, nextStatus, order.id],
         );
-        const items = await client.query(
-          "SELECT product_id,quantity FROM order_items WHERE order_id=$1",
-          [order.id],
-        );
-        for (const item of items.rows) {
-          await client.query(
-            "UPDATE products SET stock=stock+$1,updated_at=now() WHERE id=$2",
-            [item.quantity, item.product_id],
-          );
-          await client.query(
-            "INSERT INTO inventory_movements (product_id,order_id,quantity_delta,reason) VALUES ($1,$2,$3,'order_released')",
-            [item.product_id, order.id, item.quantity],
-          );
-        }
+        await releaseOrderInventory(client, order.id);
       } else if (
         event.type === "payment.refunded" &&
         order.payment_status === "paid"
       ) {
         await client.query(
-          "UPDATE orders SET payment_status='refunded',updated_at=now() WHERE id=$1",
+          "UPDATE orders SET payment_status='refunded',version=version+1,updated_at=now() WHERE id=$1",
           [order.id],
         );
       }

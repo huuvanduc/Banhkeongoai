@@ -12,6 +12,9 @@
     "start": "node server/index.js",
     "db:migrate": "node server/scripts/migrate.js",
     "admin:create": "node server/scripts/create-admin.js",
+    "orders:expire": "node server/scripts/expire-orders.js",
+    "sessions:cleanup": "node server/scripts/cleanup-sessions.js",
+    "mail:send": "node server/scripts/send-email-outbox.js",
     "test": "node --test",
     "check": "node --check server/index.js && node --check app.js && node --test"
   },

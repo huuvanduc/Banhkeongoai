@@ -116,7 +116,24 @@ export async function createHostedPayment({
       "Phản hồi cổng thanh toán không hợp lệ.",
     );
   }
-  return { checkoutUrl: data.checkoutUrl, reference: data.reference };
+  let checkoutUrl;
+  try {
+    checkoutUrl = new URL(data.checkoutUrl);
+  } catch {
+    throw new HttpError(
+      502,
+      "invalid_payment_session",
+      "Liên kết thanh toán không hợp lệ.",
+    );
+  }
+  if (checkoutUrl.protocol !== "https:") {
+    throw new HttpError(
+      502,
+      "invalid_payment_session",
+      "Cổng thanh toán phải sử dụng HTTPS.",
+    );
+  }
+  return { checkoutUrl: checkoutUrl.toString(), reference: data.reference };
 }
 
 export function verifyWebhookSignature(rawBody, signature) {
