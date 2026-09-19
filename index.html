@@ -8,6 +8,7 @@
       content="Khám phá bánh kẹo, chocolate, chăm sóc da và thực phẩm bổ sung đã được xác minh tại banhkeongoai."
     />
     <meta name="theme-color" content="#b93224" />
+    <meta name="referrer" content="no-referrer" />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
     <title>banhkeongoai — Một chút thế giới, trong giỏ của bạn</title>
@@ -92,13 +93,13 @@
         <div class="demo-note">
           <span class="demo-tag">ĐANG KIỂM TRA ĐIỀU KIỆN MỞ BÁN</span
           ><span
-            >Chỉ sản phẩm đã xác minh và có ảnh được phép sử dụng mới được hiển thị.</span
+            >Chỉ sản phẩm đã xác minh và có ảnh được phép sử dụng mới được hiển
+            thị.</span
           >
         </div>
         <div class="catalog-tools">
           <div class="chips" id="category-chips">
-            <button data-category="all" class="active">
-              Tất cả</button
+            <button data-category="all" class="active">Tất cả</button
             ><button data-category="snacks">Bánh & kẹo</button
             ><button data-category="chocolate">Chocolate</button
             ><button data-category="skincare">Chăm sóc da</button
@@ -240,9 +241,10 @@
                     placeholder="0900000000"
                     autocomplete="off" /></label
                 ><label
-                  >Email (không bắt buộc)<input
+                  >Email nhận xác nhận đơn<input
                     name="email"
                     type="email"
+                    required
                     maxlength="100"
                     placeholder="demo@example.com"
                     autocomplete="off"
@@ -286,7 +288,9 @@
               <div class="delivery-option">
                 <div>
                   <strong>Đơn vị vận chuyển nội địa</strong
-                  ><small>Phí được lấy từ kết nối vận chuyển đã cấu hình.</small>
+                  ><small
+                    >Phí được lấy từ kết nối vận chuyển đã cấu hình.</small
+                  >
                 </div>
                 <b>Tính tự động</b>
               </div>
@@ -351,7 +355,8 @@
         <button class="close" data-close aria-label="Đóng tài khoản">×</button>
       </div>
       <p class="notice">
-        Tài khoản được xác thực trên máy chủ. Không chia sẻ mật khẩu hoặc mã đăng nhập.
+        Tài khoản được xác thực trên máy chủ. Không chia sẻ mật khẩu hoặc mã
+        đăng nhập.
       </p>
       <div id="account-guest">
         <div class="auth-tabs" role="tablist">
@@ -378,7 +383,7 @@
               type="password"
               autocomplete="current-password"
               required
-              minlength="8"
+              minlength="10"
               maxlength="100" /></label
           ><button class="button primary full" type="submit">Đăng nhập</button>
         </form>
@@ -401,7 +406,7 @@
               name="password"
               type="password"
               required
-              minlength="8"
+              minlength="10"
               maxlength="100"
               autocomplete="new-password" /></label
           ><label
@@ -409,7 +414,7 @@
               name="confirm"
               type="password"
               required
-              minlength="8"
+              minlength="10"
               maxlength="100"
               autocomplete="new-password" /></label
           ><button class="button primary full" type="submit">

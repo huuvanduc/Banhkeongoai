@@ -27,6 +27,7 @@ export function errorHandler(error, request, response, _next) {
           ? "Máy chủ gặp lỗi. Vui lòng thử lại sau."
           : error.message,
       ...(error.details ? { details: error.details } : {}),
+      ...(request.id ? { requestId: request.id } : {}),
     },
   });
 }
