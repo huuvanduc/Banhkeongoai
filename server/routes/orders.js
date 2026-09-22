@@ -16,7 +16,7 @@ const bodySchema = z
       .max(50),
     customer: z.object({
       name: z.string().trim().min(1).max(80),
-      email: z.union([z.email().max(100), z.literal("")]).optional(),
+      email: z.email().max(100),
       phone: z.string().regex(/^(?:0\d{9}|\+84\d{9})$/),
     }),
     shipping: z.object({

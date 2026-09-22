@@ -3,6 +3,8 @@ import { withTransaction } from "../db.js";
 import { config } from "../config.js";
 import { HttpError } from "../lib/http.js";
 import { evaluateLaunchGate } from "./launch-gate.js";
+import { emailConfigured, queueEmail } from "./email.js";
+import { releaseOrderInventory } from "./order-lifecycle.js";
 import {
   createHostedPayment,
   getShippingQuote,
@@ -25,20 +27,30 @@ export async function getLaunchStatus(client) {
     activeProductCount: productsResult.rows[0].count,
     paymentConfigured: paymentConfigured(),
     shippingConfigured: shippingConfigured(),
+    emailConfigured: emailConfigured(),
   });
 }
 
 export async function createOrder({ user, idempotencyKey, input }) {
-  const existing = await withTransaction(async (client) => {
-    const found = await client.query(
-      "SELECT order_number, payment_checkout_url FROM orders WHERE idempotency_key = $1",
+  const prepared = await withTransaction(async (client) => {
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
       [idempotencyKey],
     );
-    return found.rows[0] || null;
-  });
-  if (existing) return existing;
+    const existing = await client.query(
+      "SELECT order_number,payment_checkout_url,status FROM orders WHERE idempotency_key=$1",
+      [idempotencyKey],
+    );
+    if (existing.rows[0]) {
+      if (!existing.rows[0].payment_checkout_url)
+        throw new HttpError(
+          409,
+          "idempotency_incomplete",
+          "Lần đặt hàng trước chưa tạo được thanh toán. Vui lòng thử lại để tạo yêu cầu mới.",
+        );
+      return { existing: true, ...existing.rows[0] };
+    }
 
-  const prepared = await withTransaction(async (client) => {
     const gate = await getLaunchStatus(client);
     if (!gate.ready)
       throw new HttpError(
@@ -88,8 +100,8 @@ export async function createOrder({ user, idempotencyKey, input }) {
         order_number, user_id, idempotency_key, payment_method, payment_provider,
         shipping_provider, shipping_service, shipping_quote_reference,
         customer_name, customer_email, customer_phone, province, ward, address, note,
-        subtotal_vnd, shipping_vnd, total_vnd
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        subtotal_vnd, shipping_vnd, total_vnd, reservation_expires_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,now()+($19*interval '1 minute'))
       RETURNING id, order_number`,
       [
         number,
@@ -110,6 +122,7 @@ export async function createOrder({ user, idempotencyKey, input }) {
         subtotalVnd,
         quote.amountVnd,
         totalVnd,
+        config.orderReservationMinutes,
       ],
     );
     for (const item of input.items) {
@@ -136,8 +149,14 @@ export async function createOrder({ user, idempotencyKey, input }) {
         [product.id, order.rows[0].id, -item.quantity, user?.id || null],
       );
     }
-    return { ...order.rows[0], totalVnd };
+    return { existing: false, ...order.rows[0], totalVnd };
   });
+
+  if (prepared.existing)
+    return {
+      order_number: prepared.order_number,
+      payment_checkout_url: prepared.payment_checkout_url,
+    };
 
   try {
     const payment = await createHostedPayment({
@@ -148,27 +167,29 @@ export async function createOrder({ user, idempotencyKey, input }) {
     });
     return await withTransaction(async (client) => {
       const { rows } = await client.query(
-        "UPDATE orders SET payment_reference = $1, payment_checkout_url = $2, updated_at = now() WHERE id = $3 RETURNING order_number, payment_checkout_url",
+        "UPDATE orders SET payment_reference = $1, payment_checkout_url = $2, updated_at = now() WHERE id = $3 RETURNING id,order_number,customer_name,customer_email,total_vnd,payment_checkout_url",
         [payment.reference, payment.checkoutUrl, prepared.id],
       );
-      return rows[0];
+      if (rows[0].customer_email) {
+        await queueEmail(client, {
+          recipient: rows[0].customer_email,
+          template: "order_received",
+          payload: {
+            name: rows[0].customer_name,
+            orderNumber: rows[0].order_number,
+            totalVnd: rows[0].total_vnd,
+          },
+          dedupeKey: `order_received:${rows[0].id}`,
+        });
+      }
+      return {
+        order_number: rows[0].order_number,
+        payment_checkout_url: rows[0].payment_checkout_url,
+      };
     });
   } catch (error) {
     await withTransaction(async (client) => {
-      const items = await client.query(
-        "SELECT product_id, quantity FROM order_items WHERE order_id = $1",
-        [prepared.id],
-      );
-      for (const item of items.rows) {
-        await client.query(
-          "UPDATE products SET stock = stock + $1, updated_at = now() WHERE id = $2",
-          [item.quantity, item.product_id],
-        );
-        await client.query(
-          "INSERT INTO inventory_movements (product_id, order_id, quantity_delta, reason, actor_user_id) VALUES ($1,$2,$3,'order_released',$4)",
-          [item.product_id, prepared.id, item.quantity, user?.id || null],
-        );
-      }
+      await releaseOrderInventory(client, prepared.id, user?.id || null);
       await client.query(
         "UPDATE orders SET status = 'payment_failed', payment_status = 'failed', updated_at = now() WHERE id = $1",
         [prepared.id],

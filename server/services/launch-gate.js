@@ -15,6 +15,7 @@ export function evaluateLaunchGate({
   activeProductCount,
   paymentConfigured,
   shippingConfigured,
+  emailConfigured,
 }) {
   const blockers = [];
   for (const field of requiredTextFields) {
@@ -25,6 +26,8 @@ export function evaluateLaunchGate({
     blockers.push("integration.payment");
   if (!settings?.shipping_enabled || !shippingConfigured)
     blockers.push("integration.shipping");
+  if (!settings?.email_enabled || !emailConfigured)
+    blockers.push("integration.email");
   if (!settings?.accepting_orders) blockers.push("settings.accepting_orders");
   return { ready: blockers.length === 0, blockers };
 }

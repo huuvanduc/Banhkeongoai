@@ -7,11 +7,14 @@ A Vietnamese/VND ecommerce storefront with a production-gated Node.js backend an
 The former browser-only prototype has been replaced with:
 
 - server-side customer and administrator authentication using HTTP-only sessions;
+- verified customer email, expiring password-reset links, and session invalidation after password changes;
 - role-protected product, order, settings, inventory, and audit data;
 - verified product and commercial-photo authorization fields;
 - persistent orders and transaction-safe inventory reservation;
 - server-calculated price, shipping, and total values;
 - idempotent hosted-payment creation and signed callback handling;
+- expiring unpaid reservations, one-time inventory release, controlled order-status transitions, and customer order history;
+- a retryable transactional-email outbox for account and order notifications;
 - live business policies and category-specific supplement/skincare notices;
 - a launch gate that refuses orders while any Phase 1 requirement is incomplete.
 
@@ -22,7 +25,7 @@ No sample product records are loaded by the storefront. Existing image files are
 - Node.js 20 or newer
 - PostgreSQL 15 or newer
 - HTTPS in production
-- A supported shipping quote API and hosted QR/card payment provider
+- A supported shipping quote API, hosted QR/card payment provider, and transactional email API
 
 ## Local development
 
@@ -45,6 +48,9 @@ Open `http://localhost:3000`. Products begin as an empty catalog by design. Sign
 | `npm start`                   | Start the production server                         |
 | `npm run db:migrate`          | Apply pending PostgreSQL migrations                 |
 | `npm run admin:create -- ...` | Create an administrator outside public registration |
+| `npm run orders:expire`       | Cancel expired unpaid orders and restore stock      |
+| `npm run sessions:cleanup`    | Remove expired sessions and account tokens          |
+| `npm run mail:send`           | Deliver pending transactional emails                |
 | `npm test`                    | Run automated tests                                 |
 | `npm run check`               | Check server/client syntax and run tests            |
 
@@ -55,5 +61,7 @@ This version requires a Node.js host and PostgreSQL. GitHub Pages can display st
 Set secrets in the hosting platform, never in the repository. Run migrations before switching traffic. Configure trusted HTTPS proxying only when the deployment platform documents it, and set `PUBLIC_ORIGIN` to the exact public HTTPS origin.
 
 Provider integrations are intentionally disabled by default. `server/services/integrations.js` defines the provider boundary, but the exact payload mapping and signature format must be adapted to the merchant's selected carrier and payment provider using their current official documentation.
+
+The email worker sends a provider-neutral JSON request with `from`, `to`, `subject`, and `text` fields. Adapt `server/services/email.js` if the selected provider requires another schema. In production, schedule `orders:expire` and `mail:send` every minute to five minutes, and `sessions:cleanup` daily. Run only one copy of the order-expiry job at a time; database locks and unique inventory movements protect against duplicate release.
 
 See [docs/PHASE-1-CHECKLIST.md](docs/PHASE-1-CHECKLIST.md) for the implementation status and launch work that requires real merchant information or credentials.

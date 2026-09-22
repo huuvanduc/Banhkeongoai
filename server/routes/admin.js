@@ -4,6 +4,11 @@ import { pool, withTransaction } from "../db.js";
 import { asyncRoute, HttpError } from "../lib/http.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { getLaunchStatus } from "../services/orders.js";
+import {
+  assertOrderTransition,
+  releaseOrderInventory,
+} from "../services/order-lifecycle.js";
+import { queueEmail } from "../services/email.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -57,7 +62,22 @@ const settingsSchema = z.object({
   skincareDisclaimer: z.string().trim().max(5000).nullable(),
   shippingEnabled: z.boolean(),
   paymentEnabled: z.boolean(),
+  emailEnabled: z.boolean(),
   acceptingOrders: z.boolean(),
+});
+
+const orderUpdateSchema = z.object({
+  status: z.enum([
+    "pending_payment",
+    "paid",
+    "processing",
+    "shipped",
+    "completed",
+    "cancelled",
+    "payment_failed",
+  ]),
+  trackingNumber: z.string().trim().max(100).nullable(),
+  version: z.int().min(1),
 });
 
 router.get(
@@ -194,6 +214,79 @@ router.get(
   }),
 );
 
+router.patch(
+  "/orders/:id",
+  asyncRoute(async (request, response) => {
+    const parsed = orderUpdateSchema.safeParse(request.body);
+    if (!parsed.success)
+      throw new HttpError(
+        400,
+        "invalid_input",
+        "Cập nhật đơn hàng không hợp lệ.",
+      );
+    const updated = await withTransaction(async (client) => {
+      const { rows } = await client.query(
+        "SELECT * FROM orders WHERE id=$1 FOR UPDATE",
+        [request.params.id],
+      );
+      const order = rows[0];
+      if (!order)
+        throw new HttpError(404, "not_found", "Không tìm thấy đơn hàng.");
+      if (order.version !== parsed.data.version)
+        throw new HttpError(
+          409,
+          "stale_order",
+          "Đơn hàng đã được thay đổi. Vui lòng tải lại.",
+        );
+      assertOrderTransition(
+        order.status,
+        parsed.data.status,
+        parsed.data.trackingNumber,
+      );
+      if (parsed.data.status === "cancelled")
+        await releaseOrderInventory(client, order.id, request.user.id);
+      const result = await client.query(
+        `UPDATE orders SET status=$1,tracking_number=$2,
+         cancellation_reason=CASE WHEN $1='cancelled' THEN 'cancelled_by_admin' ELSE cancellation_reason END,
+         version=version+1,updated_at=now() WHERE id=$3 AND version=$4 RETURNING *`,
+        [
+          parsed.data.status,
+          parsed.data.trackingNumber || null,
+          order.id,
+          parsed.data.version,
+        ],
+      );
+      await client.query(
+        "INSERT INTO audit_logs (actor_user_id,action,entity_type,entity_id,metadata) VALUES ($1,'order.status.update','order',$2,$3)",
+        [
+          request.user.id,
+          order.id,
+          {
+            from: order.status,
+            to: parsed.data.status,
+            trackingNumber: parsed.data.trackingNumber || null,
+          },
+        ],
+      );
+      if (order.customer_email) {
+        await queueEmail(client, {
+          recipient: order.customer_email,
+          template: "order_status",
+          payload: {
+            name: order.customer_name,
+            orderNumber: order.order_number,
+            status: parsed.data.status,
+            trackingNumber: parsed.data.trackingNumber || null,
+          },
+          dedupeKey: `order_status:${order.id}:${result.rows[0].version}`,
+        });
+      }
+      return result.rows[0];
+    });
+    response.json({ order: updated });
+  }),
+);
+
 router.get(
   "/settings",
   asyncRoute(async (_request, response) => {
@@ -217,7 +310,7 @@ router.put(
       );
     const s = parsed.data;
     const { rows } = await pool.query(
-      `UPDATE business_settings SET legal_name=$1,public_phone=$2,public_email=$3,address=$4,facebook_url=$5,privacy_policy=$6,shipping_policy=$7,returns_policy=$8,supplement_disclaimer=$9,skincare_disclaimer=$10,shipping_enabled=$11,payment_enabled=$12,accepting_orders=$13,updated_at=now() WHERE id=true RETURNING *`,
+      `UPDATE business_settings SET legal_name=$1,public_phone=$2,public_email=$3,address=$4,facebook_url=$5,privacy_policy=$6,shipping_policy=$7,returns_policy=$8,supplement_disclaimer=$9,skincare_disclaimer=$10,shipping_enabled=$11,payment_enabled=$12,email_enabled=$13,accepting_orders=$14,updated_at=now() WHERE id=true RETURNING *`,
       [
         s.legalName,
         s.publicPhone || null,
@@ -231,6 +324,7 @@ router.put(
         s.skincareDisclaimer,
         s.shippingEnabled,
         s.paymentEnabled,
+        s.emailEnabled,
         s.acceptingOrders,
       ],
     );

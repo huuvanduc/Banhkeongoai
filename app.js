@@ -18,6 +18,24 @@ const categories = {
   skincare: "Chăm sóc da",
   supplements: "Thực phẩm bổ sung",
 };
+const orderStatusLabels = {
+  pending_payment: "Chờ thanh toán",
+  paid: "Đã thanh toán",
+  processing: "Đang chuẩn bị",
+  shipped: "Đang giao",
+  completed: "Hoàn tất",
+  cancelled: "Đã hủy",
+  payment_failed: "Thanh toán thất bại",
+};
+const nextOrderStatuses = {
+  pending_payment: ["cancelled"],
+  paid: ["processing"],
+  processing: ["shipped"],
+  shipped: ["completed"],
+  completed: [],
+  cancelled: [],
+  payment_failed: [],
+};
 const state = {
   products: [],
   cart: new Map(),
@@ -32,6 +50,7 @@ const state = {
   adminOrders: [],
   adminSettings: null,
   launch: null,
+  checkoutKey: null,
 };
 
 async function api(path, options = {}) {
@@ -176,6 +195,7 @@ function addToCart(id) {
   const product = findProduct(id);
   if (!product || product.stock < 1) return toast("Sản phẩm hiện đã hết hàng.");
   state.cart.set(id, Math.min((state.cart.get(id) || 0) + 1, product.stock));
+  state.checkoutKey = null;
   renderCart();
   toast("Đã thêm vào giỏ hàng.");
 }
@@ -184,6 +204,7 @@ function changeQuantity(id, delta) {
   const next = (state.cart.get(id) || 0) + delta;
   if (!product || next <= 0) state.cart.delete(id);
   else state.cart.set(id, Math.min(next, product.stock));
+  state.checkoutKey = null;
   renderCart();
 }
 
@@ -212,6 +233,7 @@ function startCheckout() {
   if (!state.acceptingOrders)
     return toast("Cửa hàng chưa hoàn tất điều kiện để nhận đơn.");
   if (!state.cart.size) return;
+  state.checkoutKey ||= crypto.randomUUID().replaceAll("-", "");
   $("#checkout-summary").innerHTML = `<h3>Đơn hàng của bạn</h3>${cartItems()
     .map(
       (item) =>
@@ -239,7 +261,7 @@ async function placeOrder(event) {
   try {
     const result = await api("/api/orders", {
       method: "POST",
-      headers: { "idempotency-key": crypto.randomUUID().replaceAll("-", "") },
+      headers: { "idempotency-key": state.checkoutKey },
       body: JSON.stringify({
         items: cartItems().map((item) => ({
           productId: item.id,
@@ -247,7 +269,7 @@ async function placeOrder(event) {
         })),
         customer: {
           name: data.name,
-          email: data.email || "",
+          email: data.email,
           phone: data.phone,
         },
         shipping: {
@@ -260,6 +282,7 @@ async function placeOrder(event) {
       }),
     });
     state.cart.clear();
+    state.checkoutKey = null;
     renderCart();
     closeDialog("#checkout-dialog");
     $("#order-result").innerHTML =
@@ -286,6 +309,7 @@ function renderAccount() {
   $("#session-role").textContent =
     user.role === "admin" ? "Chủ cửa hàng" : "Khách hàng";
   $("#open-dashboard").hidden = user.role !== "admin";
+  $("#open-orders").hidden = user.role !== "customer";
 }
 function showAuthTab(id) {
   for (const tab of ["login", "register", "admin-login"]) {
@@ -323,11 +347,9 @@ async function submitRegister(form) {
       password: data.password,
     }),
   });
-  state.session = result.user;
-  renderAccount();
   form.reset();
   closeDialog("#account-dialog");
-  toast("Đã tạo tài khoản.");
+  toast(result.message || "Kiểm tra email để xác minh tài khoản.");
 }
 
 function showInfo(type) {
@@ -389,6 +411,18 @@ function installAdminFields() {
     "beforebegin",
     `<div class="form-row"><label>Khối lượng giao hàng (g)<input name="weightGrams" type="number" min="1" required></label><label>Trạng thái<select name="status"><option value="draft">Bản nháp</option><option value="active">Đang bán</option><option value="archived">Lưu trữ</option></select></label></div><div class="form-row"><label>Nguồn ảnh / giấy phép<input name="photoSource" maxlength="1000"></label><label>Quốc gia xuất xứ<input name="originCountry" maxlength="80"></label></div><label>Thành phần<textarea name="ingredients" maxlength="4000" rows="3"></textarea></label><label>Thông tin dị ứng<textarea name="allergens" maxlength="2000" rows="2"></textarea></label><label>Hướng dẫn dùng<textarea name="directions" maxlength="2000" rows="2"></textarea></label><label>Cảnh báo<textarea name="warnings" maxlength="2000" rows="2"></textarea></label><label>Bảo quản<textarea name="storage" maxlength="1000" rows="2"></textarea></label><div class="form-row"><label>Mã lô<input name="batchNumber" maxlength="100"></label><label>Hạn dùng<input name="expiresAt" type="date"></label></div><label class="check-label"><input name="photoAuthorized" type="checkbox"> Đã xác minh quyền sử dụng ảnh thương mại</label><label class="check-label"><input name="recordVerified" type="checkbox"> Đã đối chiếu hồ sơ với nhãn/lô thực tế</label>`,
   );
+  $("#login-form button[type=submit]").insertAdjacentHTML(
+    "afterend",
+    '<div class="account-links"><button class="text-button" id="forgot-password" type="button">Quên mật khẩu?</button><button class="text-button" id="resend-verification" type="button">Gửi lại email xác minh</button></div>',
+  );
+  $("#open-dashboard").insertAdjacentHTML(
+    "afterend",
+    '<button class="button secondary full" id="open-orders" hidden>Đơn hàng của tôi</button>',
+  );
+  document.body.insertAdjacentHTML(
+    "beforeend",
+    `<dialog id="recovery-dialog" class="modal account-modal" aria-labelledby="recovery-title"><div class="dialog-heading"><div><span class="eyebrow">BẢO MẬT TÀI KHOẢN</span><h2 id="recovery-title">Khôi phục mật khẩu</h2></div><button class="close" data-close aria-label="Đóng">×</button></div><form id="forgot-form" class="auth-form"><p class="muted">Nhập email tài khoản. Nếu tài khoản tồn tại, chúng tôi sẽ gửi liên kết đặt lại mật khẩu.</p><label>Email<input name="email" type="email" required maxlength="100" autocomplete="email"></label><button class="button primary full" type="submit">Gửi liên kết đặt lại</button></form><form id="reset-form" class="auth-form" hidden><input name="token" type="hidden"><label>Mật khẩu mới<input name="password" type="password" required minlength="10" maxlength="100" autocomplete="new-password"></label><label>Nhập lại mật khẩu<input name="confirm" type="password" required minlength="10" maxlength="100" autocomplete="new-password"></label><button class="button primary full" type="submit">Đặt mật khẩu mới</button></form></dialog><dialog id="customer-orders-dialog" class="modal" aria-labelledby="customer-orders-title"><div class="dialog-heading"><div><span class="eyebrow">TÀI KHOẢN</span><h2 id="customer-orders-title">Đơn hàng của tôi</h2></div><button class="close" data-close aria-label="Đóng">×</button></div><div id="customer-orders"></div></dialog>`,
+  );
 }
 
 async function loadAdmin() {
@@ -415,10 +449,13 @@ function renderAdmin() {
     '<div class="empty-state"><h3>Chưa có sản phẩm đã xác minh</h3><p>Thêm hồ sơ sản phẩm thật để bắt đầu.</p></div>';
   $("#admin-orders").innerHTML =
     state.adminOrders
-      .map(
-        (order) =>
-          `<article class="admin-order"><header><strong>${escapeHTML(order.order_number)}</strong><strong>${money(order.total_vnd)}</strong></header><p>${escapeHTML(order.customer_name)} · ${escapeHTML(order.customer_phone)}</p><p>${escapeHTML(order.status)} · ${escapeHTML(order.payment_status)}</p></article>`,
-      )
+      .map((order) => {
+        const statuses = [
+          order.status,
+          ...(nextOrderStatuses[order.status] || []),
+        ];
+        return `<article class="admin-order" data-order-id="${order.id}"><header><strong>${escapeHTML(order.order_number)}</strong><strong>${money(order.total_vnd)}</strong></header>${order.requires_review ? '<p class="order-warning">Cần kiểm tra thủ công: thanh toán đến sau khi đơn đã đóng.</p>' : ""}<p>${escapeHTML(order.customer_name)} · ${escapeHTML(order.customer_phone)} · ${escapeHTML(order.customer_email || "")}</p><p>${escapeHTML(orderStatusLabels[order.status] || order.status)} · ${escapeHTML(order.payment_status)}</p><div class="order-controls"><label>Trạng thái<select name="status">${statuses.map((status) => `<option value="${status}">${escapeHTML(orderStatusLabels[status] || status)}</option>`).join("")}</select></label><label>Mã vận đơn<input name="trackingNumber" maxlength="100" value="${escapeHTML(order.tracking_number || "")}" placeholder="Bắt buộc khi giao hàng"></label><button class="button secondary" type="button" data-save-order data-version="${order.version}">Lưu cập nhật</button></div></article>`;
+      })
       .join("") || '<div class="empty-state"><h3>Chưa có đơn hàng</h3></div>';
   renderSettings();
 }
@@ -427,7 +464,7 @@ function renderSettings() {
   const s = state.adminSettings || {};
   const blockers = state.launch?.blockers || [];
   $("#admin-settings").innerHTML =
-    `<div class="notice"><strong>${state.launch?.ready ? "Sẵn sàng nhận đơn" : "Chưa thể nhận đơn"}</strong>${blockers.length ? `<br>Còn thiếu: ${escapeHTML(blockers.join(", "))}` : ""}</div><form id="settings-form" class="auth-form"><div class="form-row"><label>Tên pháp lý / hộ kinh doanh<input name="legalName" maxlength="200" value="${escapeHTML(s.legal_name || "")}"></label><label>Số điện thoại công khai<input name="publicPhone" maxlength="30" value="${escapeHTML(s.public_phone || "")}"></label></div><div class="form-row"><label>Email công khai<input name="publicEmail" type="email" maxlength="100" value="${escapeHTML(s.public_email || "")}"></label><label>Facebook / trang chính thức<input name="facebookUrl" type="url" maxlength="1000" value="${escapeHTML(s.facebook_url || "")}"></label></div><label>Địa chỉ kinh doanh<textarea name="address" maxlength="500" rows="2">${escapeHTML(s.address || "")}</textarea></label><label>Chính sách quyền riêng tư<textarea name="privacyPolicy" maxlength="20000" rows="5">${escapeHTML(s.privacy_policy || "")}</textarea></label><label>Chính sách giao hàng<textarea name="shippingPolicy" maxlength="20000" rows="5">${escapeHTML(s.shipping_policy || "")}</textarea></label><label>Chính sách đổi trả<textarea name="returnsPolicy" maxlength="20000" rows="5">${escapeHTML(s.returns_policy || "")}</textarea></label><label>Lưu ý thực phẩm bổ sung<textarea name="supplementDisclaimer" maxlength="5000" rows="3">${escapeHTML(s.supplement_disclaimer || "")}</textarea></label><label>Lưu ý chăm sóc da<textarea name="skincareDisclaimer" maxlength="5000" rows="3">${escapeHTML(s.skincare_disclaimer || "")}</textarea></label><label class="check-label"><input name="shippingEnabled" type="checkbox" ${s.shipping_enabled ? "checked" : ""}> Đã kiểm tra kết nối vận chuyển</label><label class="check-label"><input name="paymentEnabled" type="checkbox" ${s.payment_enabled ? "checked" : ""}> Đã kiểm tra kết nối thanh toán</label><label class="check-label"><input name="acceptingOrders" type="checkbox" ${s.accepting_orders ? "checked" : ""}> Yêu cầu mở nhận đơn (chỉ có hiệu lực khi không còn mục thiếu)</label><button class="button primary full" type="submit">Lưu thông tin cửa hàng</button></form>`;
+    `<div class="notice"><strong>${state.launch?.ready ? "Sẵn sàng nhận đơn" : "Chưa thể nhận đơn"}</strong>${blockers.length ? `<br>Còn thiếu: ${escapeHTML(blockers.join(", "))}` : ""}</div><form id="settings-form" class="auth-form"><div class="form-row"><label>Tên pháp lý / hộ kinh doanh<input name="legalName" maxlength="200" value="${escapeHTML(s.legal_name || "")}"></label><label>Số điện thoại công khai<input name="publicPhone" maxlength="30" value="${escapeHTML(s.public_phone || "")}"></label></div><div class="form-row"><label>Email công khai<input name="publicEmail" type="email" maxlength="100" value="${escapeHTML(s.public_email || "")}"></label><label>Facebook / trang chính thức<input name="facebookUrl" type="url" maxlength="1000" value="${escapeHTML(s.facebook_url || "")}"></label></div><label>Địa chỉ kinh doanh<textarea name="address" maxlength="500" rows="2">${escapeHTML(s.address || "")}</textarea></label><label>Chính sách quyền riêng tư<textarea name="privacyPolicy" maxlength="20000" rows="5">${escapeHTML(s.privacy_policy || "")}</textarea></label><label>Chính sách giao hàng<textarea name="shippingPolicy" maxlength="20000" rows="5">${escapeHTML(s.shipping_policy || "")}</textarea></label><label>Chính sách đổi trả<textarea name="returnsPolicy" maxlength="20000" rows="5">${escapeHTML(s.returns_policy || "")}</textarea></label><label>Lưu ý thực phẩm bổ sung<textarea name="supplementDisclaimer" maxlength="5000" rows="3">${escapeHTML(s.supplement_disclaimer || "")}</textarea></label><label>Lưu ý chăm sóc da<textarea name="skincareDisclaimer" maxlength="5000" rows="3">${escapeHTML(s.skincare_disclaimer || "")}</textarea></label><label class="check-label"><input name="shippingEnabled" type="checkbox" ${s.shipping_enabled ? "checked" : ""}> Đã kiểm tra kết nối vận chuyển</label><label class="check-label"><input name="paymentEnabled" type="checkbox" ${s.payment_enabled ? "checked" : ""}> Đã kiểm tra kết nối thanh toán</label><label class="check-label"><input name="emailEnabled" type="checkbox" ${s.email_enabled ? "checked" : ""}> Đã kiểm tra gửi email giao dịch</label><label class="check-label"><input name="acceptingOrders" type="checkbox" ${s.accepting_orders ? "checked" : ""}> Yêu cầu mở nhận đơn (chỉ có hiệu lực khi không còn mục thiếu)</label><button class="button primary full" type="submit">Lưu thông tin cửa hàng</button></form>`;
 }
 
 async function saveSettings(event) {
@@ -449,6 +486,7 @@ async function saveSettings(event) {
       skincareDisclaimer: data.skincareDisclaimer || null,
       shippingEnabled: form.elements.shippingEnabled.checked,
       paymentEnabled: form.elements.paymentEnabled.checked,
+      emailEnabled: form.elements.emailEnabled.checked,
       acceptingOrders: form.elements.acceptingOrders.checked,
     }),
   });
@@ -457,6 +495,105 @@ async function saveSettings(event) {
   renderSettings();
   await loadStorefront();
   toast("Đã lưu thông tin cửa hàng.");
+}
+
+async function saveOrder(button) {
+  const row = button.closest(".admin-order");
+  const status = row.querySelector('[name="status"]').value;
+  const trackingNumber =
+    row.querySelector('[name="trackingNumber"]').value.trim() || null;
+  button.disabled = true;
+  try {
+    const result = await api(`/api/admin/orders/${row.dataset.orderId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status,
+        trackingNumber,
+        version: Number(button.dataset.version),
+      }),
+    });
+    state.adminOrders = state.adminOrders.map((order) =>
+      order.id === result.order.id ? result.order : order,
+    );
+    renderAdmin();
+    toast("Đã cập nhật đơn hàng và xếp email thông báo.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function showCustomerOrders() {
+  const result = await api("/api/orders/mine");
+  $("#customer-orders").innerHTML =
+    result.orders
+      .map(
+        (order) =>
+          `<article class="admin-order"><header><strong>${escapeHTML(order.order_number)}</strong><strong>${money(order.total_vnd)}</strong></header><p>${new Date(order.created_at).toLocaleDateString("vi-VN")} · ${escapeHTML(orderStatusLabels[order.status] || order.status)} · ${escapeHTML(order.payment_status)}</p>${order.tracking_number ? `<p><strong>Mã vận đơn:</strong> ${escapeHTML(order.tracking_number)}</p>` : ""}</article>`,
+      )
+      .join("") ||
+    '<div class="empty-state"><h3>Bạn chưa có đơn hàng</h3></div>';
+  closeDialog("#account-dialog");
+  openDialog("#customer-orders-dialog");
+}
+
+async function requestPasswordReset(form) {
+  const data = Object.fromEntries(new FormData(form));
+  const result = await api("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email: data.email }),
+  });
+  closeDialog("#recovery-dialog");
+  form.reset();
+  toast(result.message);
+}
+
+async function resetPassword(form) {
+  const data = Object.fromEntries(new FormData(form));
+  if (data.password !== data.confirm)
+    throw new Error("Hai mật khẩu chưa khớp.");
+  await api("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token: data.token, password: data.password }),
+  });
+  closeDialog("#recovery-dialog");
+  history.replaceState({}, "", location.pathname);
+  toast("Đã đổi mật khẩu. Bạn có thể đăng nhập lại.");
+}
+
+async function resendVerification() {
+  const email = $("#login-form").elements.email.value;
+  if (!email) throw new Error("Nhập email trước khi yêu cầu gửi lại.");
+  const result = await api("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+  toast(result.message);
+}
+
+async function handleAccountLinks() {
+  const params = new URLSearchParams(location.search);
+  const verifyToken = params.get("verify-email");
+  const resetToken = params.get("reset-password");
+  if (verifyToken) {
+    try {
+      const result = await api("/api/auth/verify-email", {
+        method: "POST",
+        body: JSON.stringify({ token: verifyToken }),
+      });
+      state.session = result.user;
+      toast("Email đã được xác minh. Bạn đã đăng nhập.");
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      history.replaceState({}, "", location.pathname);
+    }
+  }
+  if (resetToken) {
+    $("#forgot-form").hidden = true;
+    $("#reset-form").hidden = false;
+    $("#reset-form").elements.token.value = resetToken;
+    openDialog("#recovery-dialog");
+  }
 }
 
 function openProductEditor(id) {
@@ -592,11 +729,13 @@ document.addEventListener("click", async (event) => {
       return changeQuantity(button.dataset.qty, Number(button.dataset.delta));
     if (button.dataset.remove) {
       state.cart.delete(button.dataset.remove);
+      state.checkoutKey = null;
       return renderCart();
     }
     if (button.dataset.info) return showInfo(button.dataset.info);
     if (button.dataset.editOpen)
       return openProductEditor(button.dataset.editOpen);
+    if (button.hasAttribute("data-save-order")) return saveOrder(button);
     if (["login-tab", "register-tab", "admin-login-tab"].includes(button.id))
       return showAuthTab(button.id.replace("-tab", ""));
     if (button.id === "open-account") {
@@ -609,7 +748,16 @@ document.addEventListener("click", async (event) => {
       closeDialog("#cart-dialog");
       $("#catalog").scrollIntoView();
     } else if (button.id === "start-checkout") startCheckout();
-    else if (["clear-search", "reset-filters"].includes(button.id))
+    else if (button.id === "open-orders") await showCustomerOrders();
+    else if (button.id === "forgot-password") {
+      $("#forgot-form").hidden = false;
+      $("#reset-form").hidden = true;
+      $("#forgot-form").elements.email.value =
+        $("#login-form").elements.email.value;
+      openDialog("#recovery-dialog");
+    } else if (button.id === "resend-verification") {
+      await resendVerification();
+    } else if (["clear-search", "reset-filters"].includes(button.id))
       clearFilters();
     else if (button.id === "about-link") showInfo("about");
     else if (button.id === "logout") {
@@ -682,16 +830,23 @@ $("#product-editor-form").addEventListener("submit", async (event) => {
   }
 });
 document.addEventListener("submit", async (event) => {
-  if (event.target.id !== "settings-form") return;
+  if (!["settings-form", "forgot-form", "reset-form"].includes(event.target.id))
+    return;
+  event.preventDefault();
   try {
-    await saveSettings(event);
+    if (event.target.id === "settings-form") await saveSettings(event);
+    else if (event.target.id === "forgot-form")
+      await requestPasswordReset(event.target);
+    else await resetPassword(event.target);
   } catch (error) {
     toast(error.message);
   }
 });
 
 installAdminFields();
-loadStorefront().catch((error) => {
-  console.error(error);
-  toast("Không thể tải dữ liệu cửa hàng. Vui lòng thử lại.");
-});
+handleAccountLinks()
+  .then(loadStorefront)
+  .catch((error) => {
+    console.error(error);
+    toast("Không thể tải dữ liệu cửa hàng. Vui lòng thử lại.");
+  });

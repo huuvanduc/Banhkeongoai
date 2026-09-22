@@ -14,6 +14,7 @@ const completeSettings = {
   skincare_disclaimer: "Thông tin chăm sóc da",
   shipping_enabled: true,
   payment_enabled: true,
+  email_enabled: true,
   accepting_orders: true,
 };
 
@@ -24,6 +25,7 @@ test("launch gate opens only when every business and integration requirement is 
       activeProductCount: 1,
       paymentConfigured: true,
       shippingConfigured: true,
+      emailConfigured: true,
     }),
     { ready: true, blockers: [] },
   );
@@ -39,6 +41,7 @@ test("launch gate reports missing requirements and keeps orders closed", () => {
     activeProductCount: 0,
     paymentConfigured: false,
     shippingConfigured: false,
+    emailConfigured: false,
   });
   assert.equal(result.ready, false);
   assert.deepEqual(result.blockers, [
@@ -46,6 +49,7 @@ test("launch gate reports missing requirements and keeps orders closed", () => {
     "products.verified_active",
     "integration.payment",
     "integration.shipping",
+    "integration.email",
     "settings.accepting_orders",
   ]);
 });

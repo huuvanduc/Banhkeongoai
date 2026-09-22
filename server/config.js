@@ -8,7 +8,8 @@ const required = (name) => {
 
 const numberFromEnv = (name, fallback) => {
   const value = Number(process.env[name] ?? fallback);
-  if (!Number.isFinite(value)) throw new Error(`Invalid numeric environment variable: ${name}`);
+  if (!Number.isFinite(value))
+    throw new Error(`Invalid numeric environment variable: ${name}`);
   return value;
 };
 
@@ -19,18 +20,25 @@ export const config = Object.freeze({
   databaseSsl: process.env.DATABASE_SSL === "true",
   publicOrigin: required("PUBLIC_ORIGIN").replace(/\/$/, ""),
   sessionDays: numberFromEnv("SESSION_DAYS", 7),
+  orderReservationMinutes: numberFromEnv("ORDER_RESERVATION_MINUTES", 30),
   trustProxy: process.env.TRUST_PROXY === "true",
   payment: {
     provider: process.env.PAYMENT_PROVIDER || "disabled",
     checkoutUrl: process.env.PAYMENT_CHECKOUT_URL || "",
     apiKey: process.env.PAYMENT_API_KEY || "",
-    webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET || ""
+    webhookSecret: process.env.PAYMENT_WEBHOOK_SECRET || "",
   },
   shipping: {
     provider: process.env.SHIPPING_PROVIDER || "disabled",
     quoteUrl: process.env.SHIPPING_QUOTE_URL || "",
-    apiKey: process.env.SHIPPING_API_KEY || ""
-  }
+    apiKey: process.env.SHIPPING_API_KEY || "",
+  },
+  email: {
+    provider: process.env.EMAIL_PROVIDER || "disabled",
+    apiUrl: process.env.EMAIL_API_URL || "",
+    apiKey: process.env.EMAIL_API_KEY || "",
+    from: process.env.EMAIL_FROM || "",
+  },
 });
 
 export const isProduction = config.env === "production";

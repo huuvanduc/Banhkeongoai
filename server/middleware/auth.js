@@ -6,7 +6,7 @@ export const loadSession = asyncRoute(async (request, _response, next) => {
   const token = request.cookies?.session;
   if (!token) return next();
   const { rows } = await pool.query(
-    `SELECT u.id, u.name, u.email, u.role, s.id AS session_id
+    `SELECT u.id, u.name, u.email, u.role, u.email_verified_at, s.id AS session_id
        FROM sessions s JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = $1 AND s.expires_at > now() AND u.disabled_at IS NULL`,
     [hashToken(token)],
