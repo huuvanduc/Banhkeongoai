@@ -431,7 +431,8 @@ main {
 .extra-filters {
   margin: 14px 0 23px;
   display: flex;
-  gap: 20px;
+  gap: 10px 20px;
+  flex-wrap: wrap;
   align-items: center;
   font-size: 13px;
   color: var(--muted);
@@ -443,6 +444,22 @@ main {
   padding: 5px;
   font-size: 13px;
   max-width: 200px;
+}
+#max-price {
+  width: 8.5rem;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font: inherit;
+  color: var(--ink);
+}
+.stock-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.stock-filter input {
+  accent-color: var(--red);
 }
 .text-button {
   text-decoration: underline;
@@ -805,6 +822,42 @@ dialog[open] {
 .detail-copy .price {
   font-size: 25px;
   margin: 18px 0;
+}
+.related-products {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.related-products ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.related-products button {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: left;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.related-products button:hover {
+  border-color: var(--red);
+}
+.related-products img {
+  width: 100%;
+  height: 65px;
+  object-fit: contain;
+  background: var(--soft);
+  border-radius: 4px;
 }
 .detail-facts {
   margin: 20px 0;

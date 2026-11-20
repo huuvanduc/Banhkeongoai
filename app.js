@@ -43,7 +43,10 @@ const state = {
   store: null,
   acceptingOrders: false,
   category: "all",
-  brand: "all",
+  brand: "",
+  origin: "",
+  maxPrice: "",
+  inStockOnly: false,
   sort: "featured",
   query: "",
   adminProducts: [],
@@ -102,20 +105,31 @@ function subtotal() {
   return cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0);
 }
 
+function normalizeSearch(value) {
+  return value
+    .toLocaleLowerCase("vi")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replaceAll("đ", "d");
+}
+
 function filteredProducts() {
-  let products = state.products.filter(
-    (product) =>
-      state.category === "all" || product.category === state.category,
-  );
-  if (state.brand !== "all")
-    products = products.filter((product) => product.brand === state.brand);
-  const query = state.query.trim().toLocaleLowerCase("vi");
-  if (query)
-    products = products.filter((product) =>
-      `${product.name} ${product.brand}`
-        .toLocaleLowerCase("vi")
-        .includes(query),
+  const terms = normalizeSearch(state.query.trim()).split(/\s+/).filter(Boolean);
+  const products = state.products.filter((product) => {
+    if (state.category !== "all" && product.category !== state.category)
+      return false;
+    if (state.brand && product.brand !== state.brand) return false;
+    if (state.origin && product.origin_country !== state.origin) return false;
+    if (state.inStockOnly && product.stock < 1) return false;
+    if (state.maxPrice !== "" && product.price > Number(state.maxPrice))
+      return false;
+    if (!terms.length) return true;
+
+    const searchable = normalizeSearch(
+      [product.name, product.brand, product.origin_country].join(" "),
     );
+    return terms.every((term) => searchable.includes(term));
+  });
   return products.sort((a, b) =>
     state.sort === "price-asc"
       ? a.price - b.price
@@ -129,14 +143,35 @@ function filteredProducts() {
 
 function renderCatalog() {
   const products = filteredProducts();
+  const hasCatalog = state.products.length > 0;
   $("#result-count").textContent = `${products.length} sản phẩm`;
-  $("#product-grid").innerHTML = products
-    .map(
-      (product) =>
-        `<article class="product-card"><button class="product-image" data-detail="${product.id}" aria-label="Xem ${escapeHTML(product.name)}"><img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)}" loading="lazy">${product.featured ? '<span class="badge">Nổi bật</span>' : ""}</button><div class="product-meta"><span>${escapeHTML(product.brand)}</span><span>${escapeHTML(categories[product.category])}</span></div><h3><button data-detail="${product.id}">${escapeHTML(product.name)}</button></h3><p class="muted small">${escapeHTML(product.size)}</p><div class="product-bottom"><strong>${money(product.price)}</strong><button class="add-button" data-add="${product.id}" ${product.stock < 1 ? "disabled" : ""}>${product.stock < 1 ? "Hết hàng" : "Thêm +"}</button></div></article>`,
-    )
-    .join("");
+  $("#product-grid").innerHTML = products.map((product) => `
+    <article class="product-card">
+      <button class="product-image" data-detail="${product.id}" aria-label="Xem ${escapeHTML(product.name)}">
+        <img src="${escapeHTML(product.image)}" alt="" loading="lazy">
+        ${product.featured ? '<span class="category-label">Nổi bật</span>' : ""}
+      </button>
+      <div class="product-info">
+        <p class="product-brand">${escapeHTML(product.brand)} · ${escapeHTML(categories[product.category])}</p>
+        <h3><button class="product-name" data-detail="${product.id}">${escapeHTML(product.name)}</button></h3>
+        <p class="product-size">${escapeHTML(product.size)}</p>
+        <div class="product-bottom">
+          <strong class="price">${money(product.price)}</strong>
+          ${product.stock < 1
+            ? '<span class="muted small">Hết hàng</span>'
+            : `<button class="add-button" data-add="${product.id}" aria-label="Thêm ${escapeHTML(product.name)} vào giỏ">+</button>`}
+        </div>
+      </div>
+    </article>
+  `).join("");
   $("#no-results").hidden = products.length > 0;
+  $("#no-results-title").textContent = hasCatalog
+    ? "Chưa tìm thấy sản phẩm"
+    : "Danh mục chưa có sản phẩm";
+  $("#no-results-hint").textContent = hasCatalog
+    ? "Thử tên khác hoặc xóa bộ lọc để xem cả cửa hàng."
+    : "Sản phẩm sẽ xuất hiện sau khi cửa hàng hoàn tất xác minh.";
+  $("#clear-search").hidden = !hasCatalog;
   $$("[data-category]").forEach((button) =>
     button.classList.toggle(
       "active",
@@ -144,7 +179,12 @@ function renderCatalog() {
     ),
   );
   $("#reset-filters").hidden =
-    state.category === "all" && state.brand === "all" && !state.query;
+    state.category === "all" &&
+    !state.brand &&
+    !state.origin &&
+    !state.inStockOnly &&
+    state.maxPrice === "" &&
+    !state.query;
   $("#hero-products").innerHTML = state.products
     .filter((product) => product.featured)
     .slice(0, 3)
@@ -155,13 +195,17 @@ function renderCatalog() {
     .join("");
 }
 
-function renderBrands() {
-  const brands = [
-    ...new Set(state.products.map((product) => product.brand)),
-  ].sort((a, b) => a.localeCompare(b, "vi"));
-  $("#brand").innerHTML =
-    '<option value="all">Tất cả thương hiệu</option>' +
-    brands.map((brand) => `<option>${escapeHTML(brand)}</option>`).join("");
+function renderFilterOptions(selector, field, label, selected) {
+  const select = $(selector);
+  const values = [...new Set(state.products.map((product) => product[field]))]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "vi"));
+  select.replaceChildren(
+    new Option(label, ""),
+    ...values.map((value) => new Option(value, value)),
+  );
+  select.value = values.includes(selected) ? selected : "";
+  return select.value;
 }
 function chooseCategory(category) {
   state.category = category;
@@ -170,25 +214,78 @@ function chooseCategory(category) {
 }
 function clearFilters() {
   state.category = "all";
-  state.brand = "all";
-  state.query = "";
-  $("#search").value = "";
-  $("#brand").value = "all";
+  state.brand = $("#brand").value = "";
+  state.origin = $("#origin").value = "";
+  state.maxPrice = $("#max-price").value = "";
+  state.inStockOnly = $("#in-stock").checked = false;
+  state.query = $("#search").value = "";
   renderCatalog();
+}
+
+function relatedProducts(product) {
+  const alternatives = state.products.filter(
+    (candidate) =>
+      candidate.id !== product.id &&
+      candidate.category === product.category &&
+      candidate.stock > 0,
+  );
+  alternatives.sort(
+    (a, b) => Number(b.brand === product.brand) - Number(a.brand === product.brand),
+  );
+  return alternatives.slice(0, 4);
 }
 
 function productDetail(id) {
   const product = findProduct(id);
   if (!product) return;
+  const dialog = $("#product-dialog");
+  const switchingProduct = dialog.open;
+  const alternatives = relatedProducts(product);
   const health =
     product.category === "supplements"
       ? state.store?.supplement_disclaimer
       : product.category === "skincare"
         ? state.store?.skincare_disclaimer
         : "";
-  $("#product-detail").innerHTML =
-    `<div class="detail-image"><img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)}"></div><div class="detail-copy"><span class="eyebrow">${escapeHTML(product.brand)} · ${escapeHTML(categories[product.category])}</span><h2 id="product-title">${escapeHTML(product.name)}</h2><p class="detail-size">${escapeHTML(product.size)}</p><strong class="detail-price">${money(product.price)}</strong><p>${escapeHTML(product.description)}</p>${product.ingredients ? `<p><b>Thành phần:</b> ${escapeHTML(product.ingredients)}</p>` : ""}${product.allergens ? `<p><b>Dị ứng:</b> ${escapeHTML(product.allergens)}</p>` : ""}${product.directions ? `<p><b>Hướng dẫn:</b> ${escapeHTML(product.directions)}</p>` : ""}${product.warnings ? `<p><b>Lưu ý:</b> ${escapeHTML(product.warnings)}</p>` : ""}${health ? `<p class="notice">${escapeHTML(health)}</p>` : ""}<button class="button primary full" data-add="${product.id}" ${product.stock < 1 ? "disabled" : ""}>${product.stock < 1 ? "Hết hàng" : "Thêm vào giỏ"}</button></div>`;
+  $("#product-detail").innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-image"><img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)}"></div>
+      <div class="detail-copy">
+        <span class="eyebrow">${escapeHTML(product.brand)} · ${escapeHTML(categories[product.category])}</span>
+        <h2 id="product-title" tabindex="-1">${escapeHTML(product.name)}</h2>
+        <p class="detail-size">${escapeHTML(product.size)}</p>
+        <strong class="detail-price">${money(product.price)}</strong>
+        <p>${escapeHTML(product.description)}</p>
+        ${product.origin_country ? `<p><b>Xuất xứ:</b> ${escapeHTML(product.origin_country)}</p>` : ""}
+        ${product.ingredients ? `<p><b>Thành phần:</b> ${escapeHTML(product.ingredients)}</p>` : ""}
+        ${product.allergens ? `<p><b>Dị ứng:</b> ${escapeHTML(product.allergens)}</p>` : ""}
+        ${product.directions ? `<p><b>Hướng dẫn:</b> ${escapeHTML(product.directions)}</p>` : ""}
+        ${product.warnings ? `<p><b>Lưu ý:</b> ${escapeHTML(product.warnings)}</p>` : ""}
+        ${product.storage ? `<p><b>Bảo quản:</b> ${escapeHTML(product.storage)}</p>` : ""}
+        ${health ? `<p class="notice">${escapeHTML(health)}</p>` : ""}
+        <button class="button primary full" data-add="${product.id}" ${product.stock < 1 ? "disabled" : ""}>${product.stock < 1 ? "Hết hàng" : "Thêm vào giỏ"}</button>
+      </div>
+    </div>
+    ${alternatives.length ? `
+      <section class="related-products" aria-labelledby="related-title">
+        <h3 id="related-title">Sản phẩm tương tự còn hàng</h3>
+        <ul>
+          ${alternatives.map((candidate) => `
+            <li>
+              <button data-detail="${candidate.id}">
+                <img src="${escapeHTML(candidate.image)}" alt="" loading="lazy">
+                <span>${escapeHTML(candidate.name)}</span>
+                <strong>${money(candidate.price)}</strong>
+              </button>
+            </li>
+          `).join("")}
+        </ul>
+      </section>
+    ` : ""}
+  `;
   openDialog("#product-dialog");
+  dialog.scrollTop = 0;
+  if (switchingProduct) $("#product-title").focus({ preventScroll: true });
 }
 
 function addToCart(id) {
@@ -697,7 +794,8 @@ async function loadStorefront() {
   state.store = store.store;
   state.acceptingOrders = store.acceptingOrders;
   state.session = auth.user;
-  renderBrands();
+  state.brand = renderFilterOptions("#brand", "brand", "Tất cả thương hiệu", state.brand);
+  state.origin = renderFilterOptions("#origin", "origin_country", "Tất cả xuất xứ", state.origin);
   renderCatalog();
   renderCart();
   renderAccount();
@@ -795,6 +893,21 @@ $("#sort").addEventListener("change", (event) => {
 });
 $("#brand").addEventListener("change", (event) => {
   state.brand = event.target.value;
+  renderCatalog();
+});
+$("#origin").addEventListener("change", (event) => {
+  state.origin = event.target.value;
+  renderCatalog();
+});
+$("#max-price").addEventListener("input", (event) => {
+  const input = event.target;
+  const digits = input.value.replace(/[^0-9]/g, "");
+  if (input.value !== digits) input.value = digits;
+  state.maxPrice = digits;
+  renderCatalog();
+});
+$("#in-stock").addEventListener("change", (event) => {
+  state.inStockOnly = event.target.checked;
   renderCatalog();
 });
 $("#checkout-form").addEventListener("submit", placeOrder);
