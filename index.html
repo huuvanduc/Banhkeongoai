@@ -31,7 +31,7 @@
           id="search"
           type="search"
           placeholder="Hôm nay bạn tìm gì?"
-          aria-label="Tìm sản phẩm hoặc thương hiệu"
+          aria-label="Tìm theo tên, thương hiệu hoặc xuất xứ"
         /><kbd>/</kbd>
       </form>
       <button
@@ -119,16 +119,31 @@
           <label
             >Thương hiệu
             <select id="brand">
-              <option value="all">Tất cả thương hiệu</option>
-            </select></label
-          ><button class="text-button" id="reset-filters" hidden>
+              <option value="">Tất cả thương hiệu</option>
+            </select>
+          </label>
+          <label>
+            Xuất xứ
+            <select id="origin">
+              <option value="">Tất cả xuất xứ</option>
+            </select>
+          </label>
+          <label>
+            Giá tối đa (₫)
+            <input id="max-price" type="text" inputmode="numeric" maxlength="20" />
+          </label>
+          <label class="stock-filter">
+            <input id="in-stock" type="checkbox" />
+            Chỉ hiện còn hàng
+          </label>
+          <button class="text-button" id="reset-filters" hidden>
             Xóa bộ lọc
           </button>
         </div>
         <div class="product-grid" id="product-grid"></div>
         <div class="empty-state" id="no-results" hidden>
-          <h3>Chưa tìm thấy sản phẩm</h3>
-          <p>Thử tên khác hoặc xóa bộ lọc để xem cả cửa hàng.</p>
+          <h3 id="no-results-title">Chưa tìm thấy sản phẩm</h3>
+          <p id="no-results-hint">Thử tên khác hoặc xóa bộ lọc để xem cả cửa hàng.</p>
           <button class="button primary" id="clear-search">
             Xem tất cả sản phẩm
           </button>
